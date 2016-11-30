@@ -464,6 +464,14 @@ plot_ly(sledzieGroupedBy, y = ~mean, name = 'change length in time', type = 'sca
 ```
 
 Jak widac trend jest dosyc podobny w obu przypadkach.
+Ciekawa analiza jest sprawdzenie jak wielkosc sledzia ksztaltowala sie w poszczególnych miesiacach:
+
+```{r brupedByMonth}
+library(plotly)
+library(ggplot2)
+sledzieGroupedByMonth<-sledzie%>%group_by(xmonth)%>%summarize(mean=mean(length))
+ggplot(sledzieGroupedByMonth,aes(x = xmonth, y = mean))+ geom_point() + geom_smooth(method="auto", se=TRUE, color="red")
+```
 
 Aby miec wiekszy poglad na te dane zobaczmy jak ksztaltowaly sie wartosci zmiennych w poszczególnych latach(srednie wartosci zmiennych dla poszczególnych wartosci zmiennej recr): 
 
