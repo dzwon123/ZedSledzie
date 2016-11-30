@@ -2,7 +2,7 @@
 ---
 title: "raport"
 author: "Lukasz Dzwoniarski"
-date: "November 9, 2016"
+date: "```r format(Sys.time(), '%d %B, %Y')```"
 output:
   html_document:
     toc: yes
@@ -291,8 +291,9 @@ sledzieTest<-sledzie[-inTraining,]
 
 
 ```
+
 # Podsumowanie analizy
-Wstepna analiza wykazala wiele niescislosci w podanym zestawie danych. Pierwszym problemem jest nie chronologiczne ustawienie danych przez co nie mozna jesdnoznacznie stwierdzic roku w którym wykonane byly pomiary. Takze dane pomiary z danego miesiaca sa pomieszane i nie sa pogrupowane razem. Zmienna totaln reprezentujaca ilosc sledzi jest podana jako number, a nie jako integer. W zestawie danych pojawia sie takze sporo wartosci NA jest ich: ```r nullValuesCount  ```. W tym przypadku przy tak duzej ilosci niepelnych danych nie mozna bylo ich poninac. Pierwszym podejciem bylo uzupelnienie dancyh wartosciami srednimi z danego misiaca niestety nie powtórna analiza wykazala, ze nie jest to odpowiednie podejscie. Po kolejnym przeanalizowaniu danych zawuwazona zaostala zaleznosc pomiedzy danymi oraz to, ze sie powtarzaja w grupach. Wiec dane puste zostaly zastapione takimi samymi wartosciami jak ich sasiedzi, którzy posiadaja takie same pozostaae wartossci. Dzieki temu dane sa spójne. Po wykonaniu histogramu zmiennej length okazalo sie, ze prezentuje on rozklad normalny. Nastepnie dane zostaly znormalizowane do przedzialu od 0 do 1 tak aby uniknac faworyzowania zmiennych. Znormalizowane zostaly tylko dane treningowe testowe pozostaly niezmienione. Jak widac na modelach jak i na macierzy korelacji najwiekszy wplyw na dlugosc sledzia ma temperatura przy powierzchni wody, a takze dostepnosc planktonu. Do regresji zostaly uzyte 2 metody Random Forest oraz Stochastic Gradient Boosting. Lepiej wypadla metoda Random forest  choc nie pokazala, najwiekszej zaleznosci zmiennej length od temperatury przy powierzchni wody. Wydaje mi sie, ze duzym problememjest slaby opis danych, który jest niejednoznaczny. 
+Wstepna analiza wykazala wiele niescislosci w podanym zestawie danych. Pierwszym problemem jest nie chronologiczne ustawienie danych przez co nie mozna jednoznacznie stwierdzic roku w którym wykonane byly pomiary. Takze dane pomiary z danego miesiaca sa pomieszane i nie sa pogrupowane razem. Zmienna totaln reprezentujaca ilosc sledzi jest podana jako number, a nie jako integer. W zestawie danych pojawia sie takze sporo wartosci NA jest ich: ```r nullValuesCount  ```. W tym przypadku przy tak duzej ilosci niepelnych danych nie mozna bylo ich poninac. Pierwszym podejciem bylo uzupelnienie dancyh wartosciami srednimi z danego miesiaca niestety powtórna analiza wykazala, ze nie jest to odpowiednie podejscie. Po kolejnym przeanalizowaniu danych zawuwazona zaostala zaleznosc pomiedzy danymi oraz to, ze sie powtarzaje w grupach. Wiec dane puste zostaly zastapione takimi samymi wartosciami jak ich sasiedzi, którzy posiadaja takie same pozostaae wartossci. Dzieki temu dane sa spójne. Po wykonaniu histogramu zmiennej length okazalo sie, ze prezentuje on rozklad normalny. Nastepnie dane zostaly znormalizowane do przedzialu od 0 do 1 tak aby uniknac faworyzowania zmiennych. Znormalizowane zostaly tylko dane treningowe testowe pozostaly niezmienione. Jak widac na modelach jak i na macierzy korelacji najwiekszy wplyw na dlugosc sledzia ma temperatura przy powierzchni wody, a takze dostepnosc planktonu. Do regresji zostaly uzyte 2 metody Random Forest oraz Stochastic Gradient Boosting. Lepiej wypadla metoda Random forest  choc nie pokazala, najwiekszej zaleznosci zmiennej length od temperatury przy powierzchni wody. Wydaje mi sie, ze duzym problememjest slaby opis danych, który jest niejednoznaczny. Po dokonaniu sprawdzenia korelacji zmiennych silnie skorelowane zmienne zostaly usuniete. 
 
 
 # Podsumowanie zbioru danych. 
@@ -454,7 +455,7 @@ p<-ggplot(sledzie, aes(x = X, y=length)) + geom_point() + geom_smooth(method="au
 ggplotly(p)
 ```
 
-Jezeli natomiast dane nie sa posortowane chronologicznie mozna je pogrupowac po wartosci zmiennej recr która mówi o rocznym polowie a wiec w sposób nie bezposredni definiuje nam poszczególne lata.
+Jezeli natomiast dane nie sa posortowane chronologicznie mozna je pogrupowaz po wartozci zmiennej recr która mówi o rocznym polowie a wiec w sposób nie bezposredni definiuje nam poszczególne lata.
 ```{r zmiana dlugosci sledzia w czasie, echo=FALSE,warning=FALSE,message=FALSE}
 library(plotly)
 library(ggplot2)
@@ -486,7 +487,7 @@ cor<-round(cor(sledzie%>%select(length,cfin1,cfin2,chel1,chel2,lcop1,lcop2,fbar,
 cor
 ```
 
-Jak widac mam trzy pary skorelowanych dodatnich ze saba zmiennych :
+Jak widac mam trzy pary skorelowanych dodatnich ze soba zmiennych :
 
 1. lcop1 - chel1 -> ```r cor[4,6]```
 
@@ -514,12 +515,6 @@ Dla przykladu jak widac zmienne lcop1,chal1 w polaczeniu ze zmienna length maja 
 
 ```{r porównanie skorelowanych wartosci na jednym wykresie,echo=FALSE,warning=FALSE,message=FALSE}
 ggplot(sledzie,aes(y=length))+geom_point(aes(x=chel1),colour="red")+geom_point(aes(x=lcop1),colour="blue")+scale_x_continuous("chel1,lcop1")
-```
-
-Usuniecie silnie skorlowawnych danch:
-
-```{r delete related variables,warning=FALSE,message=FALSE, echo=FALSE}
-sledzie<-sledzie%>%select(length,cfin1,cfin2,lcop1,lcop2,fbar,recr,totaln,sst,sal,nao)
 ```
 
 # Regresor
@@ -596,7 +591,7 @@ gbm
 
 Wynik zbioru trningowego:
 
-```{r gbmResylt, echo=FALSE,message=FALSE,warning=FALSE,echo==FALSE}
+```{r gbmResylt, echo=FALSE,message=FALSE,warning=FALSE,echo=FALSE}
 gbmFit$results
 ```
 
@@ -605,12 +600,12 @@ gbmFit$results
 
 ## Dla Random Foorest:
 
-```{r randomFinalModel,message=FALSE,warning=FALSE,echo==FALSE}
+```{r randomFinalModel,message=FALSE,warning=FALSE,echo=FALSE}
 varImp(fit$finalModel)
 ```
 
 ## Dla Stochastic Gradient Boosting
 
-```{r boosting,message=FALSE,warning=FALSE,echo==FALSE}
+```{r boosting,message=FALSE,warning=FALSE,echo=FALSE}
 varImp(gbmFit$finalModel)
 ```
