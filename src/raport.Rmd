@@ -1,0 +1,616 @@
+
+---
+title: "raport"
+author: "Lukasz Dzwoniarski"
+date: "November 9, 2016"
+output:
+  html_document:
+    toc: yes
+  pdf_document: default
+---
+
+```{r setup, include=FALSE,cache=TRUE}
+knitr::opts_chunk$set(echo = FALSE)
+#zaladoanie biblitek oraz danych
+library(plyr)
+library(dplyr)
+library(ggplot2)
+library(caret)
+library(plotly)
+sledzie<- read.csv("sledzie.csv")
+
+#zamiana '?' na wartosci NA 
+matrix<-as.matrix(sledzie)
+nullValuesCount<-length(matrix[matrix=="?"])
+matrix[matrix=="?"]<-NA
+sledzie <- as.data.frame(matrix)
+
+#zamiana factorów na numerici i intager
+sledzie$length<-as.numeric(as.character(sledzie$length))
+sledzie$cfin1<-as.numeric(as.character(sledzie$cfin1))
+sledzie$cfin2<-as.numeric(as.character(sledzie$cfin2))
+sledzie$chel1<-as.numeric(as.character(sledzie$chel1))
+sledzie$chel2<-as.numeric(as.character(sledzie$chel2))
+sledzie$lcop1<-as.numeric(as.character(sledzie$lcop1))
+sledzie$lcop2<-as.numeric(as.character(sledzie$lcop2))
+sledzie$fbar<-as.numeric(as.character(sledzie$fbar))
+sledzie$recr<-as.numeric(as.character(sledzie$recr))
+sledzie$cumf<-as.numeric(as.character(sledzie$cumf))
+sledzie$totaln<-as.numeric(as.character(sledzie$totaln))
+sledzie$sst<-as.numeric(as.character(sledzie$sst))
+sledzie$sal<-as.numeric(as.character(sledzie$sal))
+sledzie$xmonth<-as.integer(as.character(sledzie$xmonth))
+sledzie$nao<-as.numeric(as.character(sledzie$nao))
+sledzie$X<-as.integer(as.character(sledzie$X))
+
+#uzupelnienie wartosci zerowych
+for(i in 1:length(sledzie$cfin1))
+{
+  if(is.na(sledzie$cfin1[i]))
+  {
+    if(!is.na(sledzie$cfin2[i+1])&!is.na(sledzie$cfin2[i]))
+    {
+      if(sledzie$cfin2[i]==sledzie$cfin2[i+1])
+      {
+        if(!is.na(sledzie$cfin1[i+1]))
+        {
+          sledzie$cfin1[i]<-sledzie$cfin1[i+1]
+        }
+        else
+        {
+          sledzie$cfin1[i]<-sledzie$cfin1[i-1]
+        }
+      }
+      else
+      {
+        sledzie$cfin1[i]<-sledzie$cfin1[i-1]
+      }
+    }
+    else
+    {
+      sledzie$cfin1[i]<-sledzie$cfin1[i-1]
+    }
+  }
+  if(is.na(sledzie$cfin2[i]))
+  {
+    if(!is.na(sledzie$cfin1[i+1])&!is.na(sledzie$cfin1[i]))
+    {
+      if(sledzie$cfin1[i]==sledzie$cfin1[i+1])
+      {
+        if(!is.na(sledzie$cfin2[i+1]))
+        {
+          sledzie$cfin2[i]<-sledzie$cfin2[i+1]
+        }
+        else
+        {
+          sledzie$cfin2[i]<-sledzie$cfin2[i-1]
+        }
+      }
+      else
+      {
+        sledzie$cfin2[i]<-sledzie$cfin2[i-1]
+      }
+    }
+    else
+    {
+      sledzie$cfin2[i]<-sledzie$cfin2[i-1]
+    }
+  }
+  if(is.na(sledzie$chel1[i]))
+  {
+    if(!is.na(sledzie$chel2[i+1])&!is.na(sledzie$chel2[i]))
+    {
+      if(sledzie$chel2[i]==sledzie$chel2[i+1])
+      {
+        if(!is.na(sledzie$chel1[i+1]))
+        {
+          sledzie$chel1[i]<-sledzie$chel1[i+1]
+        }
+        else
+        {
+          sledzie$chel1[i]<-sledzie$chel1[i-1]
+        }
+      }
+      else
+      {
+        sledzie$chel1[i]<-sledzie$chel1[i-1]
+      }
+    }
+    else
+    {
+      sledzie$chel1[i]<-sledzie$chel1[i-1]
+    }
+  }
+  if(is.na(sledzie$chel2[i]))
+  {
+    if(!is.na(sledzie$chel1[i+1])&!is.na(sledzie$chel1[i]))
+    {
+      if(sledzie$chel1[i]==sledzie$chel1[i+1])
+      {
+        if(!is.na(sledzie$chel2[i+1]))
+        {
+          sledzie$chel2[i]<-sledzie$chel2[i+1]
+        }
+        else
+        {
+          sledzie$chel2[i]<-sledzie$chel2[i-1]
+        }
+      }
+      else
+      {
+        sledzie$chel2[i]<-sledzie$chel2[i-1]
+      }
+    }
+    else
+    {
+      sledzie$chel2[i]<-sledzie$chel2[i-1]
+    }
+    
+  }
+  if(is.na(sledzie$lcop1[i]))
+  {
+    if(!is.na(sledzie$lcop2[i+1])&!is.na(sledzie$lcop2[i]))
+    {
+      if(sledzie$lcop2[i]==sledzie$lcop2[i+1])
+      {
+        if(!is.na(sledzie$lcop1[i+1]))
+        {
+          sledzie$lcop1[i]<-sledzie$lcop1[i+1]
+        }
+        else
+        {
+          sledzie$lcop1[i]<-sledzie$lcop1[i-1]
+        }
+      }
+      else
+      {
+        sledzie$lcop1[i]<-sledzie$lcop1[i-1]
+      }
+    }
+    else
+    {
+      sledzie$lcop1[i]<-sledzie$lcop1[i-1]
+    }
+  }
+  if(is.na(sledzie$lcop2[i]))
+  {
+    if(!is.na(sledzie$lcop2[i+1])&!is.na(sledzie$lcop2[i]))
+    {
+      if(sledzie$lcop1[i]==sledzie$lcop1[i+1])
+      {
+        sledzie$lcop2[i]<-sledzie$lcop2[i+1]
+      }
+      else
+      {
+        sledzie$lcop2[i]<-sledzie$lcop2[i-1]
+      }
+    }
+    else
+    {
+      sledzie$lcop2[i]<-sledzie$lcop2[i-1]
+    }
+  }
+  if(is.na(sledzie$fbar[i]))
+  {
+    if(sledzie$recr[i]==sledzie$recr[i+1])
+    {
+      sledzie$fbar[i]<-sledzie$fbar[i+1]
+    }
+    else
+    {
+      sledzie$fbar[i]<-sledzie$fbar[i-1]
+    }
+    
+  }
+  if(is.na(sledzie$recr[i]))
+  {
+    if(sledzie$fbar[i]==sledzie$fbar[i+1])
+    {
+      sledzie$recr[i]<-sledzie$recr[i+1]
+    }
+    else
+    {
+      sledzie$recr[i]<-sledzie$recr[i-1]
+    }
+  }
+  if(is.na(sledzie$cumf[i]))
+  {
+    if(sledzie$totaln[i]==sledzie$totaln[i+1])
+    {
+      sledzie$cumf[i]<-sledzie$cumf[i+1]
+    }
+    else
+    {
+      sledzie$cumf[i]<-sledzie$cumf[i-1]
+    }
+    
+  }
+  if(is.na(sledzie$totaln[i]))
+  {
+    if(sledzie$cumf[i]==sledzie$cumf[i+1])
+    {
+      sledzie$totaln[i]<-sledzie$totaln[i+1]
+    }
+    else
+    {
+      sledzie$totaln[i]<-sledzie$totaln[i-1]
+    }
+    
+  }
+  if(is.na(sledzie$sst[i]))
+  {
+    if(sledzie$sal[i]==sledzie$sal[i+1])
+    {
+      if(!is.na(sledzie$sst[i+1]))
+      {
+        sledzie$sst[i]<-sledzie$sst[i+1]
+      }
+      else
+      {
+        sledzie$sst[i]<-sledzie$sst[i-1]
+      }
+    }
+    else
+    {
+      sledzie$sst[i]<-sledzie$sst[i-1]
+    }
+    
+  }
+  if(is.na(sledzie$sal[i]))
+  {
+    if(sledzie$sst[i]==sledzie$sst[i+1])
+    {
+      sledzie$sal[i]<-sledzie$sal[i+1]
+    }
+    else
+    {
+      sledzie$sal[i]<-sledzie$sal[i-1]
+    }
+    
+  }
+}
+
+#funkcja normalizujaca dane
+range01 <- function(x){(x-min(x))/(max(x)-min(x))}
+
+#normalizajca 
+
+library(caret)
+#podzial na zbiór uczacy i treningowy
+set.seed(23)
+inTraining <- 
+  createDataPartition(
+    # atrybut do stratyfikacji
+    y = sledzie$length,
+    # procent w zbiorze uczacym
+    p = .75,
+    # chcemy indeksy a nie liste
+    list = FALSE)
+sledzieTraining<-sledzie[inTraining,]
+sledzieTest<-sledzie[-inTraining,]
+
+
+```
+# Podsumowanie analizy
+Wstepna analiza wykazala wiele niescislosci w podanym zestawie danych. Pierwszym problemem jest nie chronologiczne ustawienie danych przez co nie mozna jesdnoznacznie stwierdzic roku w którym wykonane byly pomiary. Takze dane pomiary z danego miesiaca sa pomieszane i nie sa pogrupowane razem. Zmienna totaln reprezentujaca ilosc sledzi jest podana jako number, a nie jako integer. W zestawie danych pojawia sie takze sporo wartosci NA jest ich: ```r nullValuesCount  ```. W tym przypadku przy tak duzej ilosci niepelnych danych nie mozna bylo ich poninac. Pierwszym podejciem bylo uzupelnienie dancyh wartosciami srednimi z danego misiaca niestety nie powtórna analiza wykazala, ze nie jest to odpowiednie podejscie. Po kolejnym przeanalizowaniu danych zawuwazona zaostala zaleznosc pomiedzy danymi oraz to, ze sie powtarzaja w grupach. Wiec dane puste zostaly zastapione takimi samymi wartosciami jak ich sasiedzi, którzy posiadaja takie same pozostaae wartossci. Dzieki temu dane sa spójne. Po wykonaniu histogramu zmiennej length okazalo sie, ze prezentuje on rozklad normalny. Nastepnie dane zostaly znormalizowane do przedzialu od 0 do 1 tak aby uniknac faworyzowania zmiennych. Znormalizowane zostaly tylko dane treningowe testowe pozostaly niezmienione. Jak widac na modelach jak i na macierzy korelacji najwiekszy wplyw na dlugosc sledzia ma temperatura przy powierzchni wody, a takze dostepnosc planktonu. Do regresji zostaly uzyte 2 metody Random Forest oraz Stochastic Gradient Boosting. Lepiej wypadla metoda Random forest  choc nie pokazala, najwiekszej zaleznosci zmiennej length od temperatury przy powierzchni wody. Wydaje mi sie, ze duzym problememjest slaby opis danych, który jest niejednoznaczny. 
+
+
+# Podsumowanie zbioru danych. 
+
+
+Najwazeniejsze informacje na temat zbioru sledzi po usnieciu wartosci pustych oraz wstepnym przetworzeniu danych. Ponizej przedstawiona jest legenda, która przedstawia co oznaczaja poszczególne zmienne.
+
+* length: dlugosc zlowionego sledzia [cm];
+* cfin1: dostepnosc planktonu [zageszczenie Calanus finmarchicus gat. 1];
+* cfin2: dostepnosc planktonu [zageszczenie Calanus finmarchicus gat. 2];
+* chel1: dostepnosc planktonu [zageszczenie Calanus helgolandicus gat. 1];
+* chel2: dostepnosc planktonu [zageszczenie Calanus helgolandicus gat. 2];
+* lcop1: dostepnosc planktonu [zageszczenie widlonogów gat. 1];
+* lcop2: dostepnosc planktonu [zageszczenie widlonogów gat. 2];
+* fbar: natezenie polowów w regionie [ulamek pozostawionego narybku];
+* recr: roczny narybek [liczba sledzi];
+* cumf: laczne roczne natezenie polowów w regionie [ulamek pozostawionego narybku];
+* totaln: laczna liczba ryb zlowionych w ramach polowu [liczba sledzi];
+* sst: temperatura przy powierzchni wody [°C];
+* sal: poziom zasolenia wody [Knudsen ppt];
+* xmonth: miesiac polowu [numer miesiaca];
+* nao: oscylacja pólnocnoatlantycka [mb].
+
+## Dane na temat zbioru sledzi:
+
+```{r data summary,echo=FALSE}
+summary(sledzie)
+```
+## Rozmiar zbioru:
+
+```{r data size,echo=FALSE,warning=FALSE,message=FALSE,warning=FALSE,message=FALSE}
+nrow(sledzie)
+```
+
+# Analiza wartosci atrybutów
+
+## Dlugosc sledzi
+```{r dlugosc sledzi, echo=FALSE,warning=FALSE,message=FALSE,warning=FALSE,message=FALSE}
+library(plyr)
+library(dplyr)
+library(ggplot2)
+ggplot(sledzie,aes(x=length))+geom_histogram(colour = "red")
+```
+
+## Dostepnosc planktonu[zageszczenie Calanus finmarchicus gat. 1]
+```{r dostepnosc planktonu[zageszczenie Calanus finmarchicus gat. 1], echo=FALSE,warning=FALSE,message=FALSE}
+library(plyr)
+library(dplyr)
+library(ggplot2)
+ggplot(sledzie,aes(x=cfin1))+geom_histogram(colour = "red")+theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+## Dostepnosc planktonu[zageszczenie Calanus finmarchicus gat. 2]
+```{r dostepnosc planktonu [zageszczenie Calanus finmarchicus gat. 2],echo=FALSE,warning=FALSE,message=FALSE}
+library(plyr)
+library(dplyr)
+library(ggplot2)
+ggplot(sledzie,aes(x=cfin2))+geom_histogram(colour = "red")+theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+## Dostepnosc planktonu [zageszczenie Calanus helgolandicus gat. 1]
+```{r dostepnosc planktonu [zageszczenie Calanus helgolandicus gat. 1],echo=FALSE,warning=FALSE,message=FALSE}
+library(plyr)
+library(dplyr)
+library(ggplot2)
+ggplot(sledzie,aes(x=chel1))+geom_histogram(colour = "red")+theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+## Dostepnosc planktonu [zageszczenie Calanus helgolandicus gat. 2]
+```{r dostepnosc planktonu [zageszczenie Calanus helgolandicus gat. 2],echo=FALSE,warning=FALSE,message=FALSE}
+library(plyr)
+library(dplyr)
+library(ggplot2)
+ggplot(sledzie,aes(x=chel2))+geom_histogram(colour = "red")+theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+## Dostepnosc planktonu [zageszczenie widlonogów gat. 1]
+```{r dostepnosc planktonu [zageszczenie widlonogów gat. 1],echo=FALSE,warning=FALSE,message=FALSE}
+library(plyr)
+library(dplyr)
+library(ggplot2)
+ggplot(sledzie,aes(x=lcop1))+geom_histogram(colour = "red")+theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+## Dostepnosc planktonu [zageszczenie widlonogów gat. 2]
+```{r dostepnosc planktonu [zageszczenie widlonogów gat. 2],echo=FALSE,warning=FALSE,message=FALSE}
+library(plyr)
+library(dplyr)
+library(ggplot2)
+ggplot(sledzie,aes(x=lcop2))+geom_histogram(colour = "red")+theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+## Natezenie polowów w regionie [ulamek pozostawionego narybku]
+```{r natezenie polowów w regionie [ulamek pozostawionego narybku],echo=FALSE,warning=FALSE,message=FALSE}
+library(plyr)
+library(dplyr)
+library(ggplot2)
+ggplot(sledzie,aes(x=fbar))+geom_histogram(colour = "red")+theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+## Roczny narybek [liczba sledzi]
+```{r roczny narybek [liczba sledzi],echo=FALSE,warning=FALSE,message=FALSE}
+library(plyr)
+library(dplyr)
+library(ggplot2)
+ggplot(sledzie,aes(x=recr))+geom_histogram(colour = "red")+theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+## Laczne roczne natezenie polowów w regionie [ulamek pozostawionego narybku]
+```{r laczne roczne natezenie polowów w regionie [ulamek pozostawionego narybku],echo=FALSE,warning=FALSE,message=FALSE}
+library(plyr)
+library(dplyr)
+library(ggplot2)
+ggplot(sledzie,aes(x=cumf))+geom_histogram(colour = "red")+theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+## Laczna liczba ryb zlowionych w ramach polowu [liczba sledzi]
+```{r laczna liczba ryb zlowionych w ramach polowu [liczba sledzi],echo=FALSE,warning=FALSE,message=FALSE}
+library(plyr)
+library(dplyr)
+library(ggplot2)
+ggplot(sledzie,aes(x=totaln))+geom_histogram(colour = "red")+theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+## Temperatura przy powierzchni wody [°C]
+
+```{r temperatura przy powierzchni wody [°C],echo=FALSE,warning=FALSE,message=FALSE}
+library(plyr)
+library(dplyr)
+library(ggplot2)
+ggplot(sledzie,aes(x=sst))+geom_histogram(colour = "red")+theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+```
+
+## Poziom zasolenia wody [Knudsen ppt]
+```{r poziom zasolenia wody [Knudsen ppt],echo=FALSE,warning=FALSE,message=FALSE}
+library(plyr)
+library(dplyr)
+library(ggplot2)
+ggplot(sledzie,aes(x=sal))+geom_histogram(colour = "red")+theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+## Oscylacja pólnocnoatlantycka [mb]
+```{r oscylacja pólnocnoatlantycka [mb],echo=FALSE,warning=FALSE,message=FALSE}
+library(plyr)
+library(dplyr)
+library(ggplot2)
+ggplot(sledzie,aes(x=nao))+geom_histogram(colour = "red")+theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+# Zmiana dlugosci sledzia w czasie:
+
+Jezeli zalozymy, ze dane sa poukladane chronologicznie to wykres zmiany dlugosci w czasie bedzie wygladal nastepujaco. 
+```{r lengthchange,echo=FALSE,warning=FALSE,message=FALSE}
+library(plotly)
+library(ggplot2)
+p<-ggplot(sledzie, aes(x = X, y=length)) + geom_point() + geom_smooth(method="auto", se=TRUE, color="red")
+
+ggplotly(p)
+```
+
+Jezeli natomiast dane nie sa posortowane chronologicznie mozna je pogrupowac po wartosci zmiennej recr która mówi o rocznym polowie a wiec w sposób nie bezposredni definiuje nam poszczególne lata.
+```{r zmiana dlugosci sledzia w czasie, echo=FALSE,warning=FALSE,message=FALSE}
+library(plotly)
+library(ggplot2)
+sledzieGroupedBy<-sledzie%>%group_by(recr)%>%summarize(mean=mean(length))
+plot_ly(sledzieGroupedBy, y = ~mean, name = 'change length in time', type = 'scatter', mode = 'lines')
+```
+
+Jak widac trend jest dosyc podobny w obu przypadkach.
+
+Aby miec wiekszy poglad na te dane zobaczmy jak ksztaltowaly sie wartosci zmiennych w poszczególnych latach(srednie wartosci zmiennych dla poszczególnych wartosci zmiennej recr): 
+
+```{r yearData,message=FALSE,warning=FALSE, echo=FALSE}
+library(plyr)
+library(dplyr)
+library(dplyr)
+library(printr)
+var<-sledzie%>%group_by(recr)%>%summarize(mean_cfin1=mean(cfin1),mean_cfin2=mean(cfin2),
+                                          mean_chel1=mean(chel1),mean_chel2=mean(chel2),
+                                          mean_lcop1=mean(lcop1),mean_lcop2=mean(lcop2),
+                                          mean_fbar=mean(fbar),mean_cum=mean(cumf),
+                                          mean_totaln=mean(totaln),mean_sst=mean(sst),
+                                          mean_sal=mean(sal),mean_nao=mean(nao))
+head(var,length(var$recr))
+```
+# Korelacja atrybutów
+
+```{r maciez korelacji,fig.width=500,warning=FALSE,message=FALSE, echo=FALSE}
+cor<-round(cor(sledzie%>%select(length,cfin1,cfin2,chel1,chel2,lcop1,lcop2,fbar,recr,cumf,totaln,sst,sal,nao)),2)
+cor
+```
+
+Jak widac mam trzy pary skorelowanych dodatnich ze saba zmiennych :
+
+1. lcop1 - chel1 -> ```r cor[4,6]```
+
+```{r lcop1 - chel1,echo=FALSE,warning=FALSE,message=FALSE}
+ggplot(sledzie,aes(x=lcop1,y=chel1))+geom_point(colour = "red")
+```
+
+2. lcop2 - chel2 -> ```r cor[5,7]```
+
+```{r lcop2 - chel2, echo = FALSE,warning=FALSE,message=FALSE}
+ggplot(sledzie,aes(x=lcop2,y=chel2))+geom_point(colour = "red")
+```
+
+3. fbar - cumf -> ```r cor[10,8]```
+
+```{r fbar - cumf,echo=FALSE,warning=FALSE,message=FALSE}
+ggplot(sledzie,aes(x=fbar,y=cumf))+geom_point(colour = "red")
+```
+
+Oraz jedna pare zmiennych skorelowanych ujemnie:
+
+1. totaln - cumf -> ```r cor[10,11]```
+
+Dla przykladu jak widac zmienne lcop1,chal1 w polaczeniu ze zmienna length maja bardzo podobna wartosc:
+
+```{r porównanie skorelowanych wartosci na jednym wykresie,echo=FALSE,warning=FALSE,message=FALSE}
+ggplot(sledzie,aes(y=length))+geom_point(aes(x=chel1),colour="red")+geom_point(aes(x=lcop1),colour="blue")+scale_x_continuous("chel1,lcop1")
+```
+
+Usuniecie silnie skorlowawnych danch:
+
+```{r delete related variables,warning=FALSE,message=FALSE, echo=FALSE}
+sledzie<-sledzie%>%select(length,cfin1,cfin2,lcop1,lcop2,fbar,recr,totaln,sst,sal,nao)
+```
+
+# Regresor
+
+
+```{r randomForest,message=FALSE,warning=FALSE,message=FALSE, echo=FALSE}
+library(plyr)
+library(dplyr)
+library(caret)
+
+sledzieTraining$cfin1<-range01(sledzieTraining$cfin1)
+sledzieTraining$cfin2<-range01(sledzieTraining$cfin2)
+sledzieTraining$chel1<-range01(sledzieTraining$chel1)
+sledzieTraining$chel2<-range01(sledzieTraining$chel2)
+sledzieTraining$lcop1<-range01(sledzieTraining$lcop1)
+sledzieTraining$lcop2<-range01(sledzieTraining$lcop2)
+sledzieTraining$fbar<-range01(sledzieTraining$fbar)
+sledzieTraining$recr<-range01(sledzieTraining$recr)
+sledzieTraining$cumf<-range01(sledzieTraining$cumf)
+sledzieTraining$sst<-range01(sledzieTraining$sst)
+sledzieTraining$sal<-range01(sledzieTraining$sal)
+sledzieTraining$nao<-range01(sledzieTraining$nao)
+
+#zaokraglenie totaln do int
+
+sledzieTraining$totaln<-as.integer(sledzieTraining$totaln)
+sledzieTraining$totaln<-range01(sledzieTraining$totaln)
+
+sledzieTraining<-sledzieTraining%>%select(length,cfin1,cfin2,lcop1,lcop2,fbar,recr,totaln,sst,sal,nao)
+ctrl <- trainControl(
+  # powtórzona ocena krzyzowa
+  method = "repeatedcv",
+  # liczba podzialów
+  number = 2,
+  # liczba powtórzen
+  repeats = 2)
+
+fit <- train(length ~ .,
+             data = sledzieTraining,
+             method = "rf",
+             trControl = ctrl,
+             importance =TRUE,
+             ntree = 10)
+prediction <- predict(fit, sledzieTest)
+okPredicted <- sledzieTest[, "length"]
+randomForest <- sqrt(mean((prediction-okPredicted)^2))
+
+gbmCtrl <- trainControl(method = "repeatedcv")
+gbmFit <- train(length ~ ., data = sledzieTraining, method = "gbm", trControl = gbmCtrl,verbose = FALSE)
+prediction2 <- predict(gbmFit, sledzieTest)
+okPredicted2 <- sledzieTest[, "length"]
+gbm <- sqrt(mean((prediction2-okPredicted2)^2))
+
+```
+
+
+Wartosc RMSE dla random forrest o paramterach number = 2 i repeats = 5:
+
+```{r randomForest2,echo=FALSE,message=FALSE,warning=FALSE}
+randomForest
+```
+
+Wynik zbioru trningowego:
+
+```{r randomForestResult2, echo=FALSE,message=FALSE,warning=FALSE}
+fit$results
+```
+
+Wartosc RMSE dla Stochastic Gradient Boosting:
+
+```{r gbm,echo=FALSE,message=FALSE,warning=FALSE}
+gbm
+```
+
+Wynik zbioru trningowego:
+
+```{r gbmResylt, echo=FALSE,message=FALSE,warning=FALSE,echo==FALSE}
+gbmFit$results
+```
+
+
+# Analiza waznosci atrybutów
+
+## Dla Random Foorest:
+
+```{r randomFinalModel,message=FALSE,warning=FALSE,echo==FALSE}
+varImp(fit$finalModel)
+```
+
+## Dla Stochastic Gradient Boosting
+
+```{r boosting,message=FALSE,warning=FALSE,echo==FALSE}
+varImp(gbmFit$finalModel)
+```
